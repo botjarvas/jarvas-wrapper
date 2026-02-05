@@ -3,13 +3,13 @@
   connection: local
   gather_facts: no
   vars:
-    canary_hosts: "web-mail,botjarvas"
-    full_hosts: "web-mail,botjarvas,blitz-infra-ansible-01"
-    run_dir: "/home/ubuntu/.openclaw/workspace/runs"
+    canary_hosts: "{{ lookup("env", "CANARY_HOSTS") or "canary1,canary2" }}"
+    full_hosts: "{{ lookup("env", "FULL_HOSTS") or "host1,host2" }}"
+    run_dir: "{{ lookup("env","RUNS_DIR") or "/runs" }}"
   tasks:
     - name: Run jarvas-lite-run.sh for canary group
       shell: |
-        /home/ubuntu/.openclaw/workspace/tools/jarvas-lite-run.sh run --action linux.apt_upgrade --scope "hosts={{ canary_hosts }}" --run-id "canary-{{ ansible_date_time.iso8601 }}" ; echo "RC:$?" > /tmp/canary_rc
+        {{ lookup("env","JARVAS_LITE_PATH") or "./tools/jarvas-lite-run.sh" }} run --action linux.apt_upgrade --scope "hosts={{ canary_hosts }}" --run-id "canary-{{ ansible_date_time.iso8601 }}" ; echo "RC:$?" > /tmp/canary_rc
       args:
         executable: /bin/bash
     - name: Read canary RC
@@ -22,6 +22,6 @@
       when: "'RC:0' not in (canary_rc.content | b64decode)"
     - name: Run jarvas-lite-run.sh for full rollout
       shell: |
-        /home/ubuntu/.openclaw/workspace/tools/jarvas-lite-run.sh run --action linux.apt_upgrade --scope "hosts={{ full_hosts }}" --run-id "rollout-{{ ansible_date_time.iso8601 }}"
+        {{ lookup("env","JARVAS_LITE_PATH") or "./tools/jarvas-lite-run.sh" }} run --action linux.apt_upgrade --scope "hosts={{ full_hosts }}" --run-id "rollout-{{ ansible_date_time.iso8601 }}"
       args:
         executable: /bin/bash
