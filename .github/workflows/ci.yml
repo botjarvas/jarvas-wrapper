@@ -12,3 +12,7 @@ jobs:
           fetch-depth: 0
       - name: Lint (placeholder)
         run: echo "Run linters/tests here"
+      - name: Smoke test (optional)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          ./scripts/smoke_http_check.sh "http://localhost:8080/" || true
