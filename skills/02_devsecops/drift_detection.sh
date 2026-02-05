@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# PixelX DevSecOps - Professional Script
-# Pillar: 02_devsecops
-# Script: drift_detection.sh
-# Description: Professional operational check. Safe defaults; review before use.
-
-main() {
-  echo "Running drift_detection.sh..."
-  # Placeholder: implement the check or action here in a non-destructive manner.
-  echo "OK"
-}
-
-main "$@"
+# PixelX DevSecOps - drift_detection
+# Heuristic: compare live package list to baseline if baseline exists
+BASELINE=${1:-/etc/jarvas/package_baseline.txt}
+if [[ ! -f "$BASELINE" ]]; then echo "WARN: baseline $BASELINE not found; create baseline with 'dpkg --get-selections > $BASELINE'"; exit 0; fi
+current=/tmp/current_pkgs_$$.txt
+dpkg --get-selections | awk '{print $1}' | sort > "$current"
+added=$(comm -13 "$BASELINE" "$current" | wc -l)
+removed=$(comm -23 "$BASELINE" "$current" | wc -l)
+if (( added > 0 || removed > 0 )); then
+  echo "FAIL: drift detected - added:$added removed:$removed" >&2
+  comm -13 "$BASELINE" "$current" || true
+  comm -23 "$BASELINE" "$current" || true
+  rm -f "$current"
+  exit 1
+fi
+rm -f "$current"
+echo "OK: no package drift detected"
+exit 0
