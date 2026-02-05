@@ -45,7 +45,7 @@ Concept
 Example command
 
 ```bash
-ansible-playbook ansible/playbooks/deploy.yml -e "CANARY_HOSTS=test-srv01" -e "FULL_HOSTS=prod-srv01,prod-srv02"
+ansible-playbook ansible/playbooks/deploy.yml -e "jarvas_lite_path=/home/ubuntu/.openclaw/workspace/jarvas-wrapper/tools/jarvas_lite_run.sh" -e "skill_path=/home/ubuntu/.openclaw/workspace/jarvas-wrapper/skills/system_health/system_health.sh"
 ```
 
 Prerequisites

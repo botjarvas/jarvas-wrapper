@@ -1,8 +1,7 @@
-# Safety-First Orchestration Example
-# This playbook demonstrates a safe, minimal pattern for scaling Jarvas-runner tasks across hosts.
-# It uses a canary-first approach and requires human validation before full rollout.
+# Safety-First Orchestration Example (variable-driven paths)
+# Uses variables: jarvas_lite_path and skill_path to avoid hardcoded relative paths.
 
-- name: Canary deploy using jarvas_lite_run
+- name: Canary deploy using jarvas_lite_run (variable paths)
   hosts: localhost
   connection: local
   gather_facts: no
@@ -11,26 +10,36 @@
     full_hosts: "host1,host2,host3"
     run_dir: "{{ lookup('env','RUNS_DIR') | default('/var/lib/jarvas/runs', true) }}"
   tasks:
+    - name: Validate variables
+      assert:
+        that:
+          - jarvas_lite_path is defined
+          - skill_path is defined
+        fail_msg: "Variables jarvas_lite_path and skill_path must be provided (e.g. -e 'jarvas_lite_path=$PWD/tools/jarvas_lite_run.sh -e skill_path=$PWD/skills/system_health/system_health.sh')"
+
     - name: Run jarvas_lite_run for canary group
       shell: |
         set -euo pipefail
         RUN_ID="canary-$(date -u +%Y%m%dT%H%M%SZ)"
-        /usr/bin/env bash ./tools/jarvas_lite_run.sh run --action system_health --run-id "$RUN_ID" --command "./skills/system_health/system_health.sh"
+        /usr/bin/env bash "{{ jarvas_lite_path }}" run --action system_health --run-id "$RUN_ID" --command "{{ skill_path }}"
         echo "$?" > /tmp/canary_rc
       args:
         executable: /bin/bash
+
     - name: Read canary RC
       slurp:
         src: /tmp/canary_rc
       register: canary_rc
+
     - name: Fail if canary failed
       fail:
         msg: "Canary execution failed (non-zero return code). Aborting rollout."
       when: "(canary_rc.content | b64decode).strip() | int != 0"
+
     - name: Run jarvas_lite_run for full rollout
       shell: |
         set -euo pipefail
         RUN_ID="rollout-$(date -u +%Y%m%dT%H%M%SZ)"
-        /usr/bin/env bash ./tools/jarvas_lite_run.sh run --action system_health --run-id "$RUN_ID" --command "./skills/system_health/system_health.sh"
+        /usr/bin/env bash "{{ jarvas_lite_path }}" run --action system_health --run-id "$RUN_ID" --command "{{ skill_path }}"
       args:
         executable: /bin/bash
