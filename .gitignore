@@ -1,0 +1,13 @@
+# Environment
+.env
+.env.*
+# Runs and logs
+runs/
+logs/
+# macOS
+.DS_Store
+# temp and backups
+temp/
+*.bak
+# editor
+*.swp

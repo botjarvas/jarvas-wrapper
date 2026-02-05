@@ -1,0 +1,2 @@
+control_url: http://localhost:5000
+agent_port: 8081
