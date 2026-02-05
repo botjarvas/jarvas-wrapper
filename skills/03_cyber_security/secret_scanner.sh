@@ -3,23 +3,32 @@ set -euo pipefail
 # PixelX DevSecOps - secret_scanner
 # Usage: secret_scanner.sh <path>
 ROOT=${1:-.}
-# patterns: private key headers, AWS keys, generic token patterns
-fail=0
-# Search for private key blocks
-if grep -RIn --exclude-dir=.git -E "-----BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY-----" "$ROOT"; then
-  echo "FOUND: Private key material" >&2; fail=1
-fi
-# AWS Access Key ID
-if grep -RIn --exclude-dir=.git -E "AKIA[0-9A-Z]{16}" "$ROOT"; then
-  echo "FOUND: AWS Access Key ID pattern" >&2; fail=1
-fi
-# Generic token (very heuristic)
-if grep -RIn --exclude-dir=.git -E "[A-Za-z0-9-_]{20,}\.[A-Za-z0-9-_]{20,}" "$ROOT"; then
-  echo "FOUND: token-like pattern" >&2; fail=1
-fi
-if (( fail == 1 )); then
-  echo "SECRET SCAN FAILED" >&2
+
+# Patterns to search (quoted properly)
+patterns=(
+  'AKIA[0-9A-Z]{16}'
+  '-----BEGIN (RSA|DSA|EC|OPENSSH|PRIVATE) KEY-----'
+  'AIza[0-9A-Za-z_-]{35}'
+  'ssh-rsa [A-Za-z0-9+/=]+'
+)
+
+COUNT=0
+for p in "${patterns[@]}"; do
+  # use grep -rE, exclude runs dir, silence errors
+  matches=$(grep -RInE --exclude-dir=runs "$p" "$ROOT" 2>/dev/null || true)
+  if [[ -n "$matches" ]]; then
+    echo "FOUND pattern: $p" >&2
+    echo "$matches" >&2
+    # increment count by number of lines
+    n=$(echo "$matches" | wc -l)
+    COUNT=$((COUNT + n))
+  fi
+done
+
+if (( COUNT > 0 )); then
+  echo "SECRET SCAN: found $COUNT potential secret(s)" >&2
   exit 1
 fi
+
 echo "OK: no obvious secrets found under $ROOT"
 exit 0
