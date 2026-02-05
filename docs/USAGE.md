@@ -6,28 +6,28 @@ This document contains concise examples demonstrating how to run the four starte
 Run a system health check and collect artifacts:
 
 ```bash
-./tools/jarvas_lite_run.sh run --action system_health --command "./skills/system_health/system_health.sh" --run-id demo-system-health-$(date -u +%Y%m%dT%H%M%SZ)
+$PWD/tools/jarvas_lite_run.sh run --action system_health --command "$PWD/skills/system_health/system_health.sh" --run-id demo-system-health-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
 ## canary_deploy (canary_check)
 Check Docker and service status for canary hosts:
 
 ```bash
-./tools/jarvas_lite_run.sh run --action canary_check --command "./skills/canary_deploy/canary_check.sh" --run-id demo-canary-$(date -u +%Y%m%dT%H%M%SZ)
+$PWD/tools/jarvas_lite_run.sh run --action canary_check --command "$PWD/skills/canary_deploy/canary_check.sh" --run-id demo-canary-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
 ## security_audit (security_scan)
 Perform a basic security scan (open ports, SSH config summary):
 
 ```bash
-./tools/jarvas_lite_run.sh run --action security_scan --command "./skills/security_audit/security_scan.sh" --run-id demo-security-$(date -u +%Y%m%dT%H%M%SZ)
+$PWD/tools/jarvas_lite_run.sh run --action security_scan --command "$PWD/skills/security_audit/security_scan.sh" --run-id demo-security-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
 ## smart_cleanup (cleanup)
 Inspect temp files and show Docker usage (non‑destructive):
 
 ```bash
-./tools/jarvas_lite_run.sh run --action smart_cleanup --command "./skills/smart_cleanup/cleanup.sh" --run-id demo-cleanup-$(date -u +%Y%m%dT%H%M%SZ)
+$PWD/tools/jarvas_lite_run.sh run --action smart_cleanup --command "$PWD/skills/smart_cleanup/cleanup.sh" --run-id demo-cleanup-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
 Notes

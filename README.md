@@ -41,7 +41,7 @@ sudo docker compose up --build -d
 Simulated canary (non‑destructive stub):
 
 ```bash
-./tools/jarvas-lite-run.sh run --action linux.apt_upgrade --scope "hosts=canary1,canary2" --run-id "demo-$(date -u +%Y%m%dT%H%M%SZ)"
+$PWD/tools/jarvas_lite_run.sh run --action linux.apt_upgrade --scope "hosts=canary1,canary2" --run-id "demo-$(date -u +%Y%m%dT%H%M%SZ)"
 ```
 
 
