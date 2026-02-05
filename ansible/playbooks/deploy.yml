@@ -1,0 +1,5 @@
+- hosts: canary
+  become: yes
+  tasks:
+    - name: Deploy placeholder
+      debug: msg="Deploy step placeholder"
