@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# PixelX DevSecOps - Professional Script
-# Pillar: 04_sre_observability
-# Script: zombie_cleanup.sh
-# Description: Professional operational check. Safe defaults; review before use.
+# PixelX DevSecOps - zombie_cleanup
+# Identify defunct (zombie) processes and show parent info
+zombies=$(ps -eo pid,stat,ppid,cmd | awk '$2=="Z" {print $1":"$4":"$3}')
+if [[ -z "$zombies" ]]; then
+  echo "OK: no zombie (defunct) processes found"
+  exit 0
+fi
+echo "FOUND zombie processes:"
+echo "$zombies"
 
-main() {
-  echo "Running zombie_cleanup.sh..."
-  # Placeholder: implement the check or action here in a non-destructive manner.
-  echo "OK"
-}
-
-main "$@"
+# show parent info
+echo "\nParent process info (ppid -> cmd):"
+for entry in $zombies; do
+  pid=$(echo "$entry" | cut -d: -f1)
+  ppid=$(echo "$entry" | cut -d: -f3)
+  ps -p "$ppid" -o pid,cmd --no-headers || true
+done
+exit 1
