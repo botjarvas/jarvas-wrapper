@@ -1,52 +1,40 @@
-# Jarvas Enterprise Suite — 8 Pillars Overview
+# Jarvas Wrapper v1.0.0 — Usage Guide
 
-This repository ships the Jarvas Enterprise Suite consisting of 8 operational pillars. Each pillar contains professional scripts designed for safe diagnostics, audit, and remediation. All scripts follow the PixelX DevSecOps header and are non-destructive by default.
+Product Name: Jarvas Wrapper v1.0.0 by PixelX
 
-Pillars and scripts:
+Value Proposition: The ultimate DevSecOps & Business Continuity Governance Suite.
 
-1) 01_business_continuity/
-  - drp_audit.sh
-  - backup_integrity.sh
-  - failover_readiness.sh
+## The 8 Pillars of Excellence
+1. Business Continuity
+2. DevSecOps
+3. Cyber Security
+4. SRE & Observability
+5. FinOps & Cost Governance
+6. Network Connectivity
+7. Database Governance
+8. Identity & Access Management
 
-2) 02_devsecops/
-  - hardening_audit.sh
-  - canary_gate.sh
-  - drift_detection.sh
+The suite provides 24 professional automation skills aligned to these pillars.
 
-3) 03_cyber_security/
-  - secret_scanner.sh
-  - pii_audit.sh
-  - ai_policy_check.sh
+## Key Features
+- Immutable Audit Trail: Every action produces a `runs/<run_id>/` folder containing `artifacts/output.raw`, `artifacts/summary.json`, and `logs/step_<action>.log`.
+- Sensitive Data Redaction: The secret scanner masks detected secrets and reports filenames and patterns only.
+- Canary‑Ready Deployments: The Ansible playbook supports canary execution flows and guarded promotion.
 
-4) 04_sre_observability/
-  - resource_invariants.sh
-  - zombie_cleanup.sh
-  - io_wait_monitor.sh
+## How to run a skill via the operational runner
 
-5) 05_finops_cost/
-  - unused_volume_check.sh
-  - orphan_image_cleanup.sh
-  - resource_rightsizing.sh
-
-6) 06_network_connectivity/
-  - latency_audit.sh
-  - ssl_expiry_check.sh
-  - dns_integrity.sh
-
-7) 07_database_governance/
-  - db_connectivity_test.sh
-  - slow_query_log_audit.sh
-  - table_corruption_check.sh
-
-8) 08_identity_access/
-  - sudoers_audit.sh
-  - ssh_key_rotation_check.sh
-  - orphan_user_audit.sh
-
-Refer to individual scripts for invocation examples. All scripts are designed to be invoked via the operational runner:
+Example: Secret Scanner
 
 ```bash
-$PWD/tools/jarvas_lite_run.sh run --action <action_name> --command "$PWD/skills/<pillar>/<script>" --run-id demo-$(date -u +%Y%m%dT%H%M%SZ)
+$PWD/tools/jarvas_lite_run.sh run --action secret_scan --run-id demo-secret --command "$PWD/skills/03_cyber_security/secret_scanner.sh $PWD"
 ```
+
+Interpretation:
+- Check `runs/demo-secret/artifacts/summary.json` for a JSON summary with `exit_code` and `status`.
+- If `status` is `FAILED`, inspect `runs/demo-secret/artifacts/output.raw` and `runs/demo-secret/logs/step_secret_scan.log` for redacted findings and remediation pointers.
+
+## Enterprise Usage Notes
+- Agents operate in a pull model and must authenticate to the Control Plane in production.
+- Configure persistent storage for `runs/` for long‑term evidence retention.
+- All scripts are non‑destructive by default; any destructive action requires explicit approval and '--apply' style flags.
 
