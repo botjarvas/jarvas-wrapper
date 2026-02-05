@@ -33,3 +33,26 @@ Inspect temp files and show Docker usage (non‑destructive):
 Notes
 - The examples assume the runner `tools/jarvas_lite_run.sh` is present and executable.
 - Artifacts are created under `runs/<run_id>/artifacts` and logs under `runs/<run_id>/logs`.
+
+## Enterprise Orchestration (Canary Rollouts)
+
+The `ansible/playbooks/deploy.yml` playbook provides a safety‑first orchestration example for running Jarvas skills across multiple hosts. It demonstrates a canary‑first approach where a small subset of hosts is validated before promoting the action to a full rollout.
+
+Concept
+- Canary phase: execute the skill on a small percentage of hosts (recommendation: ~5% of the fleet or 1–2 hosts) and validate success criteria (service health, absence of errors, performance thresholds).
+- Full rollout: after canary success, promote the same action to the remainder of the hosts.
+
+Example command
+
+```bash
+ansible-playbook ansible/playbooks/deploy.yml -e "CANARY_HOSTS=test-srv01" -e "FULL_HOSTS=prod-srv01,prod-srv02"
+```
+
+Prerequisites
+- Ansible must be installed on the control node that runs the playbook.
+- Ensure the control node has SSH connectivity to target hosts or that the playbook is adapted for your agent model.
+- Ensure snapshots/backups exist for critical hosts before running upgrades or changes.
+
+Operational notes
+- The playbook uses the operational runner to execute the skill and collect artifacts under `runs/<run_id>/artifacts`.
+- The canary RC is checked; if non‑zero, the playbook aborts the rollout and provides logs for post‑mortem.
