@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# PixelX DevSecOps - Professional Script
-# Pillar: 05_finops_cost
-# Script: unused_volume_check.sh
-# Description: Professional operational check. Safe defaults; review before use.
-
-main() {
-  echo "Running unused_volume_check.sh..."
-  # Placeholder: implement the check or action here in a non-destructive manner.
-  echo "OK"
-}
-
-main "$@"
+# PixelX DevSecOps - unused_volume_check
+# Check for block devices with no mount and not root device
+EXCLUDE_PATTERN=${1:-"/dev/loop"}
+found=0
+lsblk -o NAME,MOUNTPOINT | awk '$2==""{print "/dev/"$1}' | while read -r dev; do
+  if echo "$dev" | grep -q "$EXCLUDE_PATTERN"; then continue; fi
+  echo "UNMOUNTED: $dev"; found=1
+done
+if (( found )); then echo "FAIL: unmounted block devices exist" >&2; exit 1; fi
+echo "OK: no unmounted block devices found"
+exit 0
