@@ -1,92 +1,39 @@
-# Project Documentation
+# Project Technical Architecture
 
-## Visão e Motivação
+This document describes the technical architecture and system flow of the Jarvas Wrapper product. It focuses on components, interfaces, data flows and operational considerations for deployment in production.
 
-### Problema que o wrapper resolve
+## Components
 
-- Situação atual (dor)
-  - Operações dispersas: as equipas usam scripts ad‑hoc, playbooks e UIs diferentes para gerir skills/agents; cada mudança exige passos manuais, testes e validação repetitiva.
-  - Falta de governação: updates críticos são realizados sem provas auditáveis, sem SHOW_COMMANDS previsíveis nem aprovação humana padronizada.
-  - Risco de downtime: upgrades em massa ou automatizados sem canary/rollout plan levam a regressões que afetam produção.
-  - Dificuldade em monetizar: não existe um formato padronizado e empacotável que permita vender repetidamente.
-  - Segurança e compliance fracos: falta de trilha de auditoria tamper‑evident e requisitos de não‑interatividade em upgrades.
+- Control Plane: a central service (HTTP) that manages tasks, agents and metadata. Responsibilities include task scheduling, artifact indexing, and audit collection.
+- Agent: a lightweight process running inside customer infrastructure that polls the control plane for tasks, executes actions using the operational runner and returns artifacts and status.
+- Operational Runner (jarvas_lite_run): a local execution engine responsible for running commands, collecting artifacts, producing phase markers and structured summaries.
+- Artifact Store: file system or object storage where runs/<run_id>/artifacts and logs are stored. Designed to be mounted into the control plane or backed by S3-compatible storage for long-term retention.
+- CI/CD Pipelines: GitHub Actions workflows for build/test, release and canary orchestration.
 
-- Consequências tangíveis
-  - Tempo humano elevado por mudança.
-  - Incidentes nocturnos e rollbacks demorados.
-  - Impossibilidade de provar conformidade para clientes/reguladores.
-  - Barreiras a transformar automações em produto.
+## System Flow
 
-- Como o wrapper resolve
-  - Padroniza artefactos: empacota skills + testes + CI numa unidade re‑utilizável e versionada.
-  - Governa fluxos: impõe SHOW_COMMANDS + HITL approvals antes de ações com impacto, gerando evidência.
-  - Automatiza releases & canary: CI constrói, publica e permite canary deploys automatizados com rollback criterions.
-  - Reduz risco de bloqueios: implementa invariantes operacionais (ex.: APT non‑interactive + NEEDRESTART_MODE=a + lock‑wait).
-  - Observabilidade e evidência: cada run produz apt_upgrade.raw, apt_upgrade.json, step logs e um run_id ligado ao audit.
-  - Produto vendável: cria um pacote repetível que permite oferecer templates pagos, suporte gerido e serviços de integração.
+1. Developer packages a skill and creates a PR in the repository. CI validates the package, runs unit/smoke tests and builds artifacts.
+2. On merge, the control plane can schedule or accept manual triggers (workflow_dispatch) to run a canary.
+3. Agents poll the control plane `/task` endpoint. When tasks are assigned, the agent executes the `jarvas_lite_run` in `run` mode with the provided command.
+4. The runner creates `runs/<run_id>/artifacts` and `runs/<run_id>/logs`, writes `artifacts/summary.json` and returns metadata to the control plane.
+5. Operators review artifacts and decide to promote or abort the rollout based on predefined criteria.
 
-- Benefícios medíveis
-  - Redução do tempo de rollout.
-  - Menor MTTR.
-  - Compliancy facilitada.
-  - Escalabilidade do negócio.
+## Interfaces
 
-## Arquitetura
+- Control Plane API (HTTP)
+  - `GET /task` — agent poll for tasks
+  - `POST /register` — agent registration
+  - `POST /tasks` — create task (internal/operator)
 
-- Repo: jarvas-wrapper
-  - .github/workflows/ci.yml — build/test pipeline
-  - .github/workflows/release.yml — publish on release
-  - .github/workflows/canary-deploy.yml — manual canary via Actions
-  - ansible/playbooks/deploy.yml — playbook para canary + rollout
-  - tools/jarvas-lite-run.sh — runner governado
-  - docs/ONBOARDING.md — quick onboarding
-  - scripts/release.sh, Makefile, Dockerfile
+- Artifact format
+  - `artifacts/output.raw` — raw stdout/stderr
+  - `artifacts/summary.json` — JSON with fields {run_id, action, timestamp, exit_code, status}
+  - `logs/step_<action>.log` — per-step logs with PHASE markers
 
-- Runtimes: GitHub Actions, runner host (botjarvas) com jarvas-lite-run.sh
-- Secrets: GH_PAT, SSH_DEPLOY_KEY
-- Audit model: runs/<run_id>/artifacts + audit JSONL
+## Operational Considerations
 
-## Fluxo padrão (end-to-end)
-
-1. Dev → push → PR → CI
-2. Merge → release workflow available
-3. Trigger Canary Deploy → Ansible playbook → jarvas-lite-run.sh executes linux.apt_upgrade on canary hosts
-4. If canary OK → promote rollout
-5. Per run: artifacts + audit appended; PHASE markers recorded
-
-## Regras operacionais e governança
-
-- SHOW_COMMANDS antes de ações que escrevem.
-- HITL phrases: "OK executar" / "OK destrutivo".
-- APT upgrade invariant está registado em MEMORY.md (DEBIAN_FRONTEND=noninteractive, NEEDRESTART_MODE=a, dpkg_options=force-confdef,force-confold, lock-wait 10min, artefactos obrigatórios).
-- Secrets nunca imprimidos; audit append-only.
-
-## Deployment & Canary details
-
-- Canary group selection via variáveis no playbook.
-- Canary run: executa apt_upgrade em canary, recolhe RC e artefacts, valida com smoke tests.
-- Promotion: rollout automático se canary RC==0.
-
-## Monetização / GTM
-
-- Ofertas: Skill Packs, Managed Jarvas, Integration & Onboarding.
-- Modelos: Freemium + premium packs, Hosted managed instances, Consultoria.
-- Pricing examples: Templates pack: $49; Managed: $99–399/mo; Enterprise: $5k–25k.
-
-## Roadmap & next steps
-
-- 0–14 dias: polish CI, smoke tests, artefacts.
-- 15–30 dias: package 2–3 skill packs + landing page.
-- 30–60 dias: onboard first paying customer.
-
-## Runbook (operacional)
-
-- How to run canary: Actions → Canary Deploy or ansible-playbook ansible/playbooks/deploy.yml
-- Inspect artifacts: ls runs/<run_id>/artifacts
-- Rollback: restore snapshot or manual remediation.
-
-## Contribuição e responsabilidades
-
-- Contribuir via PRs; code owners / reviewers para merges.
-- Secret handling policy and rotation.
+- Agents should run as unprivileged processes and execute only verified commands.
+- Artifacts must be stored on durable storage with retention policies configured per tenant.
+- Secrets must be managed outside the repo (Vault, GitHub Secrets, or environment variables).
+- Monitoring: collect metrics for run durations, success/failure rates and artifact sizes.
 
