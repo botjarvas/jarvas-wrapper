@@ -1,0 +1,27 @@
+- name: Canary deploy using jarvas-lite-run
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    canary_hosts: "web-mail,botjarvas"
+    full_hosts: "web-mail,botjarvas,blitz-infra-ansible-01"
+    run_dir: "/home/ubuntu/.openclaw/workspace/runs"
+  tasks:
+    - name: Run jarvas-lite-run.sh for canary group
+      shell: |
+        /home/ubuntu/.openclaw/workspace/tools/jarvas-lite-run.sh run --action linux.apt_upgrade --scope "hosts={{ canary_hosts }}" --run-id "canary-{{ ansible_date_time.iso8601 }}" ; echo "RC:$?" > /tmp/canary_rc
+      args:
+        executable: /bin/bash
+    - name: Read canary RC
+      slurp:
+        src: /tmp/canary_rc
+      register: canary_rc
+    - name: Fail if canary failed
+      fail:
+        msg: "Canary upgrade failed"
+      when: "'RC:0' not in (canary_rc.content | b64decode)"
+    - name: Run jarvas-lite-run.sh for full rollout
+      shell: |
+        /home/ubuntu/.openclaw/workspace/tools/jarvas-lite-run.sh run --action linux.apt_upgrade --scope "hosts={{ full_hosts }}" --run-id "rollout-{{ ansible_date_time.iso8601 }}"
+      args:
+        executable: /bin/bash
