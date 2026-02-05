@@ -1,115 +1,35 @@
-# Usage & Examples
+# Usage: Starter Skills Examples
 
-This document shows how to use the operational runner (jarvas-lite-run.sh) and common flows for the Jarvas Wrapper product.
+This document contains concise examples demonstrating how to run the four starter skills using the operational runner.
 
-## Runner modes
-
-The runner supports two modes:
-
-- agent — long‑running agent that polls a control plane for tasks (stubbed in this repo).
-- run — execute a single action/command and collect artifacts and logs.
-
-### Run mode (operational)
-
-This is the primary execution engine for skills. It guarantees artifact collection, phase markers, and a structured summary for each run.
-
-Required arguments:
-- `--action <ACTION>` — a short name for the action (e.g. linux.apt_upgrade)
-- `--command '<SHELL COMMAND>'` — the shell command to execute (quoted)
-
-Optional arguments:
-- `--run-id <RUN_ID>` — if omitted the runner generates a timestamped run id: `run-YYYYMMDDTHHMMSSZ`
-
-Example:
+## system_health
+Run a system health check and collect artifacts:
 
 ```bash
-# run a simulated upgrade command and collect artifacts
-./tools/jarvas-lite-run.sh run --action linux.apt_upgrade \
-  --command "echo 'Simulate upgrade'; sleep 1; echo 'done'" \
-  --run-id demo-20260205T012345Z
+./tools/jarvas_lite_run.sh run --action system_health --command "./skills/system_health/system_health.sh" --run-id demo-system-health-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
-What it does:
-1. Ensures directories exist: `runs/<RUN_ID>/artifacts` and `runs/<RUN_ID>/logs`.
-2. Emits: `PHASE: STARTING_EXECUTION` to the step log.
-3. Executes the provided command with `eval`, capturing stdout/stderr to `artifacts/output.raw` and appending it to `logs/step_<ACTION>.log`.
-4. Emits: `PHASE: COMPLETED` and `EXIT:<code>` to the step log.
-5. Writes `artifacts/summary.json` with fields: `run_id`, `action`, `timestamp`, `exit_code`, `status` (SUCCESS|FAILED).
-6. Exits with the same exit code as the executed command.
-
-Notes & security:
-- `--command` is executed with `eval` to allow flexible shell expressions. Only provide trusted commands or run the agent in an isolated environment.
-- Artifacts are stored under the `runs/` directory; ensure this path is on durable storage if you need long‑term retention.
-
-## Agent mode (stub)
-
-To run the agent that polls the control plane:
+## canary_deploy (canary_check)
+Check Docker and service status for canary hosts:
 
 ```bash
-# environment variables:
-# CONTROL_URL (default: http://localhost:5000)
-# Run the agent:
-./tools/jarvas-lite-run.sh agent
+./tools/jarvas_lite_run.sh run --action canary_check --command "./skills/canary_deploy/canary_check.sh" --run-id demo-canary-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
-The agent in this repository is a minimal stub: it polls `GET $CONTROL_URL/task` every 10 seconds and is intended as a starting point for a production agent which should implement secure registration, authentication and task execution protocol.
-
-## Example: Full simulated canary flow (local)
-
-1. Start the control and agent with docker compose (see README):
+## security_audit (security_scan)
+Perform a basic security scan (open ports, SSH config summary):
 
 ```bash
-sudo docker compose up --build -d
+./tools/jarvas_lite_run.sh run --action security_scan --command "./skills/security_audit/security_scan.sh" --run-id demo-security-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
-2. Run a simulated canary run using `run` mode:
+## smart_cleanup (cleanup)
+Inspect temp files and show Docker usage (non‑destructive):
 
 ```bash
-./tools/jarvas-lite-run.sh run --action linux.apt_upgrade \
-  --command "echo 'Simulated upgrade for canary hosts'; sleep 1; echo 'OK'"
+./tools/jarvas_lite_run.sh run --action smart_cleanup --command "./skills/smart_cleanup/cleanup.sh" --run-id demo-cleanup-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
-3. Inspect artifacts:
-
-```bash
-ls -la runs/<RUN_ID>/artifacts
-cat runs/<RUN_ID>/artifacts/output.raw
-cat runs/<RUN_ID>/artifacts/summary.json
-cat runs/<RUN_ID>/logs/step_linux.apt_upgrade.log
-```
-
-## Integrating skills with the runner
-
-Design each skill so that the "work" is a single shell command (or a small wrapper script) that can be passed as the `--command` to the runner. The runner will take care of evidence collection and status reporting.
-
-Example skill wrapper script (skill/run_upgrade.sh):
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-# perform the real steps here
-apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade
-```
-
-And invoke it via the runner:
-
-```bash
-./tools/jarvas-lite-run.sh run --action linux.apt_upgrade --command "./skill/run_upgrade.sh"
-```
-
-## Troubleshooting
-
-- If the runner fails with permission errors when creating `runs/` paths, check filesystem permissions.
-- If `docker compose` commands fail, ensure the current user is in the `docker` group or use `sudo`.
-- If you need to redact sensitive info, follow `docs/SECURITY.md` guidelines.
-
-## Next steps
-
-- Replace the agent stub with a secure agent that authenticates to the control plane.
-- Add signing of artifacts for tamper‑evidence.
-- Add per‑service smoke checks called after upgrades.
-
----
-
-If you want, I'll commit this doc and update the PR with the README changes (OK executar to push).
+Notes
+- The examples assume the runner `tools/jarvas_lite_run.sh` is present and executable.
+- Artifacts are created under `runs/<run_id>/artifacts` and logs under `runs/<run_id>/logs`.

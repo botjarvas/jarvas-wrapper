@@ -1,30 +1,27 @@
-# Jarvas Agent — Technical Overview
+# Jarvas Agent — Technical Reference
 
-This document describes the architecture, responsibilities and communication protocol of the Jarvas Agent.
+This document specifies the Jarvas Agent architecture, responsibilities and the control plane interaction model.
 
-## Purpose
-The Jarvas Agent executes tasks locally on behalf of the Control Plane. It provides a minimal surface area: secure registration, task polling, execution via the operational runner, and artifact upload or placement.
+Overview
+The Jarvas Agent is a lightweight component that executes tasks assigned by the Control Plane. It is designed for secure operation within customer networks and minimizes the attack surface by employing a pull model for task retrieval.
 
-## Responsibilities
-- Securely register with the Control Plane and maintain heartbeat information.
-- Poll the Control Plane for tasks at a configurable interval.
-- Validate and execute assigned tasks using the operational runner (`jarvas_lite_run`).
-- Persist artifacts and logs to local storage and optionally upload to a configured storage backend.
-- Report task completion status and metadata back to the Control Plane.
+Core Responsibilities
+- Register with the Control Plane and maintain operational metadata.
+- Poll for pending tasks at a configurable interval.
+- Execute approved tasks using the operational runner and capture artifacts.
+- Persist and expose execution artifacts and status to the Control Plane.
 
-## Communication Model
-- Pull model (default): Agent issues `GET /task` to retrieve tasks. This model avoids opening inbound ports on customer networks.
-- Registration: `POST /register` with agent metadata (agent_id, capabilities). The Control Plane returns optional configuration.
+Communication Protocol
+- Registration: `POST /register` with agent metadata.
+- Task retrieval: `GET /task` (pull model).
+- Result reporting: Task completion metadata and artifact references are provided back to the control endpoint.
 
-## Security
-- Authentication: Agents must be authenticated via tokens or mTLS in production deployments. The repo includes a stubbed polling agent for testing only.
-- Least privilege: The agent must not run as root; commands executed should be confined by OS policies and containers where possible.
+Security and Deployment
+- Agents must authenticate to the Control Plane using secure tokens or mTLS in production.
+- Run the agent as a non‑privileged service; prefer containerized deployment for isolation.
+- Configure resource limits and logging to comply with operational policies.
 
-## Execution
-- Tasks contain: action name, command to execute, and optional artifacts destinations.
-- The Agent invokes `jarvas_lite_run run --action <action> --command '<cmd>' --run-id <id>` to perform execution and artifact collection.
-
-## Deployment
-- The agent is delivered as a container image (tools/Dockerfile.agent) or as a binary/script for systemd deployment.
-- Configuration recommended via environment variables or mounted configuration files (CONFIG_DIR, RUNS_DIR, CONTROL_URL).
-
+Configuration
+- Recommended configuration is provided via `.env` and mounted config files. Key settings:
+  - `CONTROL_URL` — Control Plane base URL
+  - `RUNS_DIR` — Local path for run artifacts and logs

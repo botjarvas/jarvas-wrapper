@@ -1,45 +1,41 @@
-# Installation Guide (Quickstart)
+# Installation Guide (Production-Ready)
 
-This guide provides concise, reproducible steps to install Jarvas Wrapper in a self‑hosted environment for evaluation.
+This document provides concise, reproducible steps to install and operate Jarvas Wrapper in a self‑hosted environment.
 
 Prerequisites
 - Linux host (Ubuntu 22.04+ recommended)
-- git, sudo
+- git
 - Docker Engine and Docker Compose plugin
+- Sufficient privileges to manage Docker and system services
 
-Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/<owner>/jarvas-wrapper.git
-   cd jarvas-wrapper
-   git checkout main
-   ```
+Installation
+1. Clone the repository and switch to the main branch:
 
-2. Configure environment:
-   ```bash
-   cp .env.example .env
-   # Edit .env to set CONFIG_DIR, RUNS_DIR, CONTROL_URL as required
-   ./install.sh
-   ```
+```bash
+git clone https://github.com/<owner>/jarvas-wrapper.git
+cd jarvas-wrapper
+git checkout main
+```
 
-3. Start services:
-   ```bash
-   sudo docker compose up --build -d
-   ```
+2. Configure environment and prepare directories:
 
-4. Verify:
-   ```bash
-   docker compose ps
-   curl -sS $CONTROL_URL/task
-   ```
+```bash
+cp .env.example .env
+# Edit .env to set CONFIG_DIR, RUNS_DIR, CONTROL_URL as required
+./install.sh
+```
 
-5. Run a demo:
-   ```bash
-   ./tools/jarvas_lite_run.sh run --action system_health --command "./skills/system_health/system_health.sh"
-   ls -la runs/<run_id>/artifacts
-   ```
+3. Start services with Docker Compose:
 
-Operational Notes
-- Do not commit secrets to the repository. Use environment variables or a secrets manager.
-- For production deployments, configure secure authentication between Agents and the Control Plane.
+```bash
+sudo docker compose up --build -d
+```
 
+Validation
+- Confirm services are running:
+  - `sudo docker compose ps`
+  - `curl -sS ${CONTROL_URL:-http://localhost:5000}/task`
+
+Operational considerations
+- Manage secrets externally; do not store credentials in the repository.
+- Configure persistent storage for `runs/` if you require long‑term artifact retention.
