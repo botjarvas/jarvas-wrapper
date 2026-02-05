@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  agent:
+    build:
+      context: ./tools
+      dockerfile: Dockerfile.agent
+    environment:
+      - CONFIG_DIR=/data/config
+      - RUNS_DIR=/data/runs
+      - CONTROL_URL=http://control:5000
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+  control:
+    build: ./control
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./control:/app

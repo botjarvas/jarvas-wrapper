@@ -14,3 +14,15 @@ Quickstart
 Mais detalhes em docs/PROJECT_DOCUMENTATION.md
 
 Contato: Estoura (via este repo)
+
+## Self-hosted product
+This repository now supports a self-hosted agent and control plane for product deployment.
+Run `./install.sh` to bootstrap, then `docker-compose up --build` to run agent + control locally for testing.
+
+See docs/INSTALL.md and docs/AGENT.md for details.
+
+## Self-hosted product
+This repository now supports a self-hosted agent and control plane for product deployment.
+Run `./install.sh` to bootstrap, then `docker-compose up --build` to run agent + control locally for testing.
+
+See docs/INSTALL.md and docs/AGENT.md for details.
