@@ -1,58 +1,52 @@
-# Usage: Starter Skills Examples
+# Jarvas Enterprise Suite — 8 Pillars Overview
 
-This document contains concise examples demonstrating how to run the four starter skills using the operational runner.
+This repository ships the Jarvas Enterprise Suite consisting of 8 operational pillars. Each pillar contains professional scripts designed for safe diagnostics, audit, and remediation. All scripts follow the PixelX DevSecOps header and are non-destructive by default.
 
-## system_health
-Run a system health check and collect artifacts:
+Pillars and scripts:
+
+1) 01_business_continuity/
+  - drp_audit.sh
+  - backup_integrity.sh
+  - failover_readiness.sh
+
+2) 02_devsecops/
+  - hardening_audit.sh
+  - canary_gate.sh
+  - drift_detection.sh
+
+3) 03_cyber_security/
+  - secret_scanner.sh
+  - pii_audit.sh
+  - ai_policy_check.sh
+
+4) 04_sre_observability/
+  - resource_invariants.sh
+  - zombie_cleanup.sh
+  - io_wait_monitor.sh
+
+5) 05_finops_cost/
+  - unused_volume_check.sh
+  - orphan_image_cleanup.sh
+  - resource_rightsizing.sh
+
+6) 06_network_connectivity/
+  - latency_audit.sh
+  - ssl_expiry_check.sh
+  - dns_integrity.sh
+
+7) 07_database_governance/
+  - db_connectivity_test.sh
+  - slow_query_log_audit.sh
+  - table_corruption_check.sh
+
+8) 08_identity_access/
+  - sudoers_audit.sh
+  - ssh_key_rotation_check.sh
+  - orphan_user_audit.sh
+
+Refer to individual scripts for invocation examples. All scripts are designed to be invoked via the operational runner:
 
 ```bash
-$PWD/tools/jarvas_lite_run.sh run --action system_health --command "$PWD/skills/system_health/system_health.sh" --run-id demo-system-health-$(date -u +%Y%m%dT%H%M%SZ)
+$PWD/tools/jarvas_lite_run.sh run --action <action_name> --command "$PWD/skills/<pillar>/<script>" --run-id demo-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
-## canary_deploy (canary_check)
-Check Docker and service status for canary hosts:
-
-```bash
-$PWD/tools/jarvas_lite_run.sh run --action canary_check --command "$PWD/skills/canary_deploy/canary_check.sh" --run-id demo-canary-$(date -u +%Y%m%dT%H%M%SZ)
-```
-
-## security_audit (security_scan)
-Perform a basic security scan (open ports, SSH config summary):
-
-```bash
-$PWD/tools/jarvas_lite_run.sh run --action security_scan --command "$PWD/skills/security_audit/security_scan.sh" --run-id demo-security-$(date -u +%Y%m%dT%H%M%SZ)
-```
-
-## smart_cleanup (cleanup)
-Inspect temp files and show Docker usage (non‑destructive):
-
-```bash
-$PWD/tools/jarvas_lite_run.sh run --action smart_cleanup --command "$PWD/skills/smart_cleanup/cleanup.sh" --run-id demo-cleanup-$(date -u +%Y%m%dT%H%M%SZ)
-```
-
-Notes
-- The examples assume the runner `tools/jarvas_lite_run.sh` is present and executable.
-- Artifacts are created under `runs/<run_id>/artifacts` and logs under `runs/<run_id>/logs`.
-
-## Enterprise Orchestration (Canary Rollouts)
-
-The `ansible/playbooks/deploy.yml` playbook provides a safety‑first orchestration example for running Jarvas skills across multiple hosts. It demonstrates a canary‑first approach where a small subset of hosts is validated before promoting the action to a full rollout.
-
-Concept
-- Canary phase: execute the skill on a small percentage of hosts (recommendation: ~5% of the fleet or 1–2 hosts) and validate success criteria (service health, absence of errors, performance thresholds).
-- Full rollout: after canary success, promote the same action to the remainder of the hosts.
-
-Example command
-
-```bash
-ansible-playbook ansible/playbooks/deploy.yml -e "jarvas_lite_path=/home/ubuntu/.openclaw/workspace/jarvas-wrapper/tools/jarvas_lite_run.sh" -e "skill_path=/home/ubuntu/.openclaw/workspace/jarvas-wrapper/skills/system_health/system_health.sh"
-```
-
-Prerequisites
-- Ansible must be installed on the control node that runs the playbook.
-- Ensure the control node has SSH connectivity to target hosts or that the playbook is adapted for your agent model.
-- Ensure snapshots/backups exist for critical hosts before running upgrades or changes.
-
-Operational notes
-- The playbook uses the operational runner to execute the skill and collect artifacts under `runs/<run_id>/artifacts`.
-- The canary RC is checked; if non‑zero, the playbook aborts the rollout and provides logs for post‑mortem.
